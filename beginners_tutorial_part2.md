@@ -3,6 +3,40 @@ In the previous article, you saw how to create a Presenter and its associated vi
 
 In this part, we'll continue to build what we need for our toaster's incredible journey into space.
 
+This tutorial will go over the following features:
+* [Gatekeeper: Protecting your assets](#Gatekeeper: Protecting your assets)
+* PlaceManager: Going from one place to another
+* PresenterWidget: Reusable controls with their own logic
+* RestDispatch: Communicating the RESTful way
+
+This is the new application structure:
+
+```
+├── ApplicationModule.java
+├── ApplicationPresenter.java
+├── ApplicationView.java
+├── ApplicationView.ui.xml
+├── CurrentUser.java
+├── LoggedInGatekeeper.java
+├── launcher
+│   ├── LauncherModule.java
+│   ├── LauncherPresenter.java
+│   ├── LauncherUiHandlers.java
+│   ├── LauncherView.java
+│   ├── LauncherView.ui.xml
+│   └── widget
+│       ├── ToasterPresenterWidget.java
+│       ├── ToasterViewWidget.java
+│       ├── ToasterViewWidget.ui.xml
+│       └── ToasterWidgetUiHandlers.java
+└── login
+    ├── LoginModule.java
+    ├── LoginPresenter.java
+    ├── LoginUiHandlers.java
+    ├── LoginView.java
+    └── LoginView.ui.xml
+```
+
 ## Gatekeeper: Protecting your assets
 A [Gatekeeper][Gatekeeper] is what you use when you want to protect a Place (a Presenter having a ProxyPlace) from unauthorized access. If your application has a login page or an admin section, you want a Gatekeeper. When a Gatekeeper is used on a Presenter, it will prevent revealing the Presenter until x condition is met. x condition will be verified on the Gatekeeper's `canReveal()` method. If it returns true, the Presenter will be revealed if not, well, it will not...
 
@@ -250,7 +284,7 @@ This is the `ToasterViewVidget.ui.xml`:
 </ui:UiBinder>
 ```
 
-This is the `ToasterViewVidget.java`:
+This is the `ToasterViewWidget.java`:
 
 ```java
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -286,10 +320,54 @@ public class ToasterViewWidget extends ViewWithUiHandlers<ToasterWidgetUiHandler
 }
 ```
 
+This is the `ToasterWidgetUiHandlers.java`:
+
+```java
+import com.gwtplatform.mvp.client.UiHandlers;
+
+public interface ToasterWidgetUiHandlers extends UiHandlers {
+    void fetchToaster();
+}
+```
+
+Now we're going to override the method into the ToasterPresenterWidget:
+
+```java
+@Override
+public void fetchToaster() {
+    // TODO: Send request to server
+}
+```
+
+Now to set this PresenterWidget into its parent Presenter, we need to inject it and set it in a [Slot][Slot]. Like this:
+
+```java
+public static final Slot SLOT_CONTENT = new Slot();
+
+private final ToasterPresenterWidget toasterPresenterWidget;
+
+@Inject
+LauncherPresenter(
+        EventBus eventBus,
+        MyView view,
+        MyProxy proxy,
+        ToasterPresenterWidget toasterPresenterWidget) {
+    super(eventBus, view, proxy, ApplicationPresenter.SLOT_MAIN);
+
+    this.toasterPresenterWidget = toasterPresenterWidget;
+
+    getView().setUiHandlers(this);
+    setInSlot(SLOT_CONTENT, toasterPresenterWidget);
+}
+```
+
+The `setInSlot()` method allow us to set the PresenterWidget we've injected into the Slot you just declared.
+
 ## RestDispatch: Communicating the RESTful way
 REST is everywhere nowadays and GWTP has a client library to communicate with a server in a RESTful way. [RestDispatch][RestDispatch] can be used independently of GWTP which makes it great for any GWT application. Everything you send over the wire must be serializable in JSON.
 
 [:Gatekeeper](http://dev.arcbees.com/gwtp/core/security/)
 [:PlaceManager](http://dev.arcbees.com/gwtp/core/navigation/reveal-places.html)
 [:PresenterWidgets](http://dev.arcbees.com/gwtp/core/presenters/index.html)
+[:Slot](http://dev.arcbees.com/gwtp/core/slots/)
 [:RestDispatch](http://dev.arcbees.com/gwtp/communication/)
